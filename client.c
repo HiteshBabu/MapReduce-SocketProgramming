@@ -1,3 +1,9 @@
+/* Client program which send data to be perfomed various reduction type i.e., min, max, sum and sos to the server 
+/* and obtain back the result. 
+/* This program has taken some code snippet taken from http://www.beej.us/guide/bgnet for setting up socket, 
+/* connecting, sending and receiving sockets*/
+
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
@@ -24,14 +30,16 @@ int main(int argc, char **argv) {
 	int data[1024]= {};
 	const char *type = NULL;
 	char *token;
-	unsigned long answer[10], result;
+	long answer[10], result;
 
+	/*valid correct number of argument given at command line*/
 	if(argc != 2) {
 		printf("Invalid number of argument\n");
 		exit(-1);		
 	}
 
 	type = argv[1];
+	/*passing reduction type in data of index 0 along the data of csv file */
 	if(strcmp("min", type)==0) {
 		data[count]=0;
 	} else if(strcmp("max", type)==0) {
@@ -46,7 +54,7 @@ int main(int argc, char **argv) {
 	}
 	count++;
 
-
+	/*creating socket with IPV4, TCP*/
 	if((sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR) {
 		perror("socket");
 		exit(-1);
@@ -54,9 +62,9 @@ int main(int argc, char **argv) {
 	
 	remote_server.sin_family = AF_INET;
 	remote_server.sin_port = htons(25510);
-	remote_server.sin_addr.s_addr = htonl(INADDR_ANY);
-	bzero(&remote_server.sin_zero, 8);
-
+	remote_server.sin_addr.s_addr = inet_addr("127.0.0.1");   //Localhost = "127.0.0.1"
+	 
+	/*Connect to AWS server*/
 	if((connect(sock, (struct sockaddr *)&remote_server, sizeof(struct sockaddr_in))) == ERROR) {
 		perror("connect");
 		exit(-1);
@@ -64,10 +72,13 @@ int main(int argc, char **argv) {
 
 	printf("The client is up and running. \n");
 
+	/*Reading the csv file data, storing those numbers in csv file to data array and passing entire array to aws server and receiving the result from the aws server*/
 	while(1) {
-
+		
 		inputFile = fopen("nums.csv", "r");
 		count = 2; 
+
+		
 		if(inputFile != NULL) {
 			while(fgets(c, 1024, inputFile)) {
 				token = strtok(c,";");
@@ -81,7 +92,7 @@ int main(int argc, char **argv) {
 			
 			recv(sock, answer, 1024, 0);
 			result=ntohl(answer[0]);
-			printf("The client has received reduction %s:%lu \n", type, result);			
+			printf("The client has received reduction %s: %ld \n", type, result);			
 
 			fclose(inputFile);
 			exit(-1);
